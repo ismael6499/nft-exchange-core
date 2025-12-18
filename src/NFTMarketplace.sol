@@ -3,6 +3,7 @@
 pragma solidity 0.8.24;
 
 import "../lib/openzeppelin-contracts/contracts/access/Ownable.sol";
+import "../lib/openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
 
 contract NFTMarketplace is Ownable {
 
@@ -21,6 +22,9 @@ contract NFTMarketplace is Ownable {
     }
 
     function listNFT(address _nftAddress, uint256 _tokenId, uint256 _price) external{
+        require(_price > 0, "Price cannot be 0");
+        address _owner = IERC721(_nftAddress).ownerOf(_tokenId);
+        require(_owner == msg.sender, "You aren't the NFT's owner");
         Listing memory newListing = Listing({
             seller: msg.sender,
             nftAddress: _nftAddress,
@@ -31,5 +35,7 @@ contract NFTMarketplace is Ownable {
         listing[_nftAddress][_tokenId] = newListing;
         counter++;
     }
+
+    
 
 }
