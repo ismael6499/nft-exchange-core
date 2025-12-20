@@ -57,7 +57,7 @@ contract NFTMarketplace is Ownable, ReentrancyGuard {
         require(currentList.price > 0, "NFT not listed");
         require(msg.value == currentList.price, "Not enough ETH");
         address _seller = currentList.seller;
-        require(_seller != msg.sender, "Not owner");
+        require(_seller != msg.sender, "You are the owner");
         delete listings[_nftAddress][_tokenId];
 
         IERC721(_nftAddress).safeTransferFrom(_seller, msg.sender, _tokenId);
@@ -85,7 +85,7 @@ contract NFTMarketplace is Ownable, ReentrancyGuard {
     function cancelList(address _nftAddress, uint256 _tokenId) external {
         Listing memory currentListing = listings[_nftAddress][_tokenId];
         address _seller = currentListing.seller;
-        require(_seller == msg.sender, "You aren't the NFT's owner");
+        require(_seller == msg.sender, "Not owner");
         delete listings[_nftAddress][_tokenId];
         emit NFTCancelled(msg.sender, _nftAddress, _tokenId);
     }
