@@ -1,66 +1,38 @@
-## Foundry
+# 🏪 NFT Exchange Core: Atomic Settlement Protocol
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+A trustless, decentralized exchange protocol for ERC-721 assets, featuring atomic settlement logic, configurable fee structures, and defensive security patterns against DoS attacks.
 
-Foundry consists of:
+## 🚀 Engineering Context
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+As a **Java Software Engineer**, building an E-commerce platform typically involves utilizing a database transaction manager (like Spring's `@Transactional`) to handle inventory updates and integrating third-party payment gateways (Stripe/PayPal) for settlement.
 
-## Documentation
+In **Solidity**, "settlement" is immediate and irreversible. This project explores the **Atomic Swap** pattern: ensuring that the asset transfer (NFT) and the value transfer (ETH) happen in the exact same transaction block, or fail entirely. It removes the need for an escrow intermediary or off-chain reconciliation.
 
-https://book.getfoundry.sh/
+## 💡 Project Overview
 
-## Usage
+**NFT Exchange Core** is a smart contract system that facilitates the non-custodial listing and purchasing of NFTs. It implements a dual-fee model (Listing Fee + Platform Fee) and enforces strict checks to prevent common market exploits.
 
-### Build
+### 🔍 Key Technical Features:
 
-```shell
-$ forge build
-```
+* **Atomic Settlement & Fee Splitting:**
+    * **Logic:** The `buyNft` function calculates the platform fee (in Basis Points), transfers the net amount to the seller, and the fee to the protocol in a single execution flow.
+    * **Precision:** Implemented granular fee calculation using Basis Points (BPS) (`fee * feeBps / 10000`) to avoid rounding errors common in integer arithmetic.
 
-### Test
+* **Defensive Transfer Logic (DoS Prevention):**
+    * **The Problem:** If a seller's address is a smart contract that reverts on receiving ETH, it could permanently lock an item or break the marketplace flow.
+    * **The Solution:** The protocol explicitly handles failure cases. I wrote specific Foundry tests (`RevertingSeller`) to simulate hostile actors rejecting ETH, ensuring the protocol reverts safely rather than leaving the state inconsistent.
 
-```shell
-$ forge test
-```
+* **Security Patterns:**
+    * **Reentrancy Protection:** Applied `nonReentrant` modifiers to all functions performing external ETH calls (`buyNft`) to prevent reentrancy attacks during the value transfer.
+    * **State-First Design:** Follows the "Checks-Effects-Interactions" pattern, deleting the listing from storage *before* transferring the asset to prevent re-listing exploits.
 
-### Format
+## 🛠️ Stack & Tools
 
-```shell
-$ forge fmt
-```
+* **Language:** Solidity `0.8.24`.
+* **Testing:** Foundry (Forge).
+    * *Highlights:* Usage of Mocks (`MockNFT`) and hostile contracts (`RevertingReceiver`) to test edge cases.
+* **Standards:** ERC-721, Ownable.
 
-### Gas Snapshots
+---
 
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+*This repository contains the core settlement logic for a decentralized marketplace infrastructure.*
