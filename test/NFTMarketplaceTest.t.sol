@@ -34,11 +34,9 @@ contract NFTMarketplaceTest is Test {
 
         vm.prank(deployer);
         nftMarketplace = new NFTMarketplace(listingFee, saleFeePercent);
-        vm.stopPrank();
 
+        vm.startPrank(seller);
         mockNFT = new MockNFT();
-
-        vm.prank(seller);
         uint256 listingFeePlusOneEther = listingFee + 1 ether;
         vm.deal(seller, listingFeePlusOneEther);
         mockNFT.mint(seller, tokenId);
@@ -51,32 +49,47 @@ contract NFTMarketplaceTest is Test {
     }
 
     function testSetListingFee() public {
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         nftMarketplace.setListingFee(0.02 ether);
         assertEq(nftMarketplace.listingFee(), 0.02 ether);
         vm.stopPrank();
     }
 
     function testSetSaleFeePercent() public {
-        vm.prank(deployer);
+        vm.startPrank(deployer);
         nftMarketplace.setSaleFeePercent(20);
         assertEq(nftMarketplace.saleFeePercent(), 20);
         vm.stopPrank();
     }
 
     function testShouldRevertIfPriceIsZero() public {
-        vm.prank(seller);
+        vm.startPrank(seller);
         vm.expectRevert("Price cannot be 0");
         nftMarketplace.listNFT{value: listingFee}(address(mockNFT), tokenId, 0);
         vm.stopPrank();
     }
 
     function testShouldRevertIfNotOwner() public {
-        vm.prank(buyer);
+        vm.startPrank(buyer);
         vm.deal(buyer, listingFee);
         vm.expectRevert("Not owner");
         uint256 price = 1 ether;
         nftMarketplace.listNFT{value: listingFee}(address(mockNFT), tokenId, price);
+        vm.stopPrank();
+    }
+
+    function testListNFTCorrectly() public {
+        vm.startPrank(seller);
+        uint256 price = 1 ether;
+
+        (address sellerBefore,,,) = nftMarketplace.listings(address(mockNFT), tokenId);
+        assertEq(sellerBefore, address(0));
+        
+        nftMarketplace.listNFT{value: listingFee}(address(mockNFT), tokenId, price);
+
+        (address sellerAfter,,,) = nftMarketplace.listings(address(mockNFT), tokenId);
+        assertEq(sellerAfter, seller);
+
         vm.stopPrank();
     }
 }

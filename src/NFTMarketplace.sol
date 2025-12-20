@@ -14,7 +14,7 @@ contract NFTMarketplace is Ownable, ReentrancyGuard {
         uint256 price;
     }
 
-    mapping(address => mapping(uint256 => Listing)) listing;
+    mapping(address => mapping(uint256 => Listing)) public listings;
     uint256 public listingFee;
     uint256 public saleFeePercent; // In basis points (e.g., 250 = 2.5%)
     uint256 private constant BASIS_POINTS = 10000;
@@ -42,7 +42,7 @@ contract NFTMarketplace is Ownable, ReentrancyGuard {
             price: _price
         });
 
-        listing[_nftAddress][_tokenId] = newListing;
+        listings[_nftAddress][_tokenId] = newListing;
 
         if (listingFee > 0) {
             (bool success, ) = owner().call{value: listingFee}("");
@@ -53,12 +53,12 @@ contract NFTMarketplace is Ownable, ReentrancyGuard {
     }
 
     function buyNFT(address _nftAddress, uint256 _tokenId) external payable {
-        Listing memory currentList = listing[_nftAddress][_tokenId];
+        Listing memory currentList = listings[_nftAddress][_tokenId];
         require(currentList.price > 0, "NFT not listed");
         require(msg.value == currentList.price, "Not enough ETH");
         address _seller = currentList.seller;
         require(_seller != msg.sender, "Not owner");
-        delete listing[_nftAddress][_tokenId];
+        delete listings[_nftAddress][_tokenId];
 
         IERC721(_nftAddress).safeTransferFrom(_seller, msg.sender, _tokenId);
 
@@ -83,10 +83,10 @@ contract NFTMarketplace is Ownable, ReentrancyGuard {
     }
 
     function cancelList(address _nftAddress, uint256 _tokenId) external {
-        Listing memory currentListing = listing[_nftAddress][_tokenId];
+        Listing memory currentListing = listings[_nftAddress][_tokenId];
         address _seller = currentListing.seller;
         require(_seller == msg.sender, "You aren't the NFT's owner");
-        delete listing[_nftAddress][_tokenId];
+        delete listings[_nftAddress][_tokenId];
         emit NFTCancelled(msg.sender, _nftAddress, _tokenId);
     }
 
