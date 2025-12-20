@@ -19,38 +19,22 @@ contract NFTMarketplace is Ownable, ReentrancyGuard {
     uint256 public saleFeePercent; // In basis points (e.g., 250 = 2.5%)
     uint256 private constant BASIS_POINTS = 10000;
 
-    event NFTListed(
-        address indexed seller,
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 price
-    );
-    event NFTBought(
-        address indexed buyer,
-        address seller,
-        address indexed nftAddress,
-        uint256 indexed tokenId,
-        uint256 price
-    );
-    event NFTCancelled(
-        address indexed seller,
-        address indexed nftAddress,
-        uint256 indexed tokenId
-    );
+    event NFTListed(address indexed seller, address indexed nftAddress, uint256 indexed tokenId, uint256 price);
+    event NFTBought(address indexed buyer, address seller, address indexed nftAddress, uint256 indexed tokenId, uint256 price);
+    event NFTCancelled(address indexed seller, address indexed nftAddress, uint256 indexed tokenId);
     event ListingFeeUpdated(uint256 newFee);
     event SaleFeePercentUpdated(uint256 newPercent);
 
-    constructor() Ownable(msg.sender) {}
+    constructor(uint256 _listingFee, uint256 _saleFeePercent) Ownable(msg.sender) {
+        listingFee = _listingFee;
+        saleFeePercent = _saleFeePercent;
+    }
 
-    function listNFT(
-        address _nftAddress,
-        uint256 _tokenId,
-        uint256 _price
-    ) external payable {
+    function listNFT(address _nftAddress, uint256 _tokenId, uint256 _price) external payable {
         require(msg.value == listingFee, "Incorrect listing fee");
         require(_price > 0, "Price cannot be 0");
         address _owner = IERC721(_nftAddress).ownerOf(_tokenId);
-        require(_owner == msg.sender, "You aren't the NFT's owner");
+        require(_owner == msg.sender, "Not owner");
         Listing memory newListing = Listing({
             seller: msg.sender,
             nftAddress: _nftAddress,
@@ -73,7 +57,7 @@ contract NFTMarketplace is Ownable, ReentrancyGuard {
         require(currentList.price > 0, "NFT not listed");
         require(msg.value == currentList.price, "Not enough ETH");
         address _seller = currentList.seller;
-        require(_seller != msg.sender, "You are the NFT's owner");
+        require(_seller != msg.sender, "Not owner");
         delete listing[_nftAddress][_tokenId];
 
         IERC721(_nftAddress).safeTransferFrom(_seller, msg.sender, _tokenId);
