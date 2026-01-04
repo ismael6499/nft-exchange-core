@@ -1,38 +1,47 @@
-# 🏪 NFT Exchange Core: Atomic Settlement Protocol
+# ⚡ NFT Exchange Core: Atomic Settlement Protocol
 
-A trustless, decentralized exchange protocol for ERC-721 assets, featuring atomic settlement logic, configurable fee structures, and defensive security patterns against DoS attacks.
+![Solidity](https://img.shields.io/badge/Solidity-0.8.24-363636?style=flat-square&logo=solidity)
+![Framework](https://img.shields.io/badge/Framework-Foundry-bf4904?style=flat-square&logo=rust)
+![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 
-## 🚀 Engineering Context
+A robust, non-custodial exchange protocol for ERC-721 assets, engineered for **atomic settlement** and **gas efficiency**.
 
-As a **Java Software Engineer**, building an E-commerce platform typically involves utilizing a database transaction manager (like Spring's `@Transactional`) to handle inventory updates and integrating third-party payment gateways (Stripe/PayPal) for settlement.
+The system ensures that asset (NFT) and value (ETH) transfers occur within a single transaction block, removing the need for off-chain reconciliation or escrow intermediaries. It implements defensive coding patterns to mitigate common Denial of Service (DoS) vectors found in decentralized marketplaces.
 
-In **Solidity**, "settlement" is immediate and irreversible. This project explores the **Atomic Swap** pattern: ensuring that the asset transfer (NFT) and the value transfer (ETH) happen in the exact same transaction block, or fail entirely. It removes the need for an escrow intermediary or off-chain reconciliation.
+## 🏗 Architecture & Design Decisions
 
-## 💡 Project Overview
+### 1. Gas Optimization (EVM-First Design)
+- **Custom Errors:** Utilizes `error Name()` instead of expensive string-based `require` statements to reduce deployment and runtime gas costs.
+- **Storage Efficiency:** Implemented constant variables for immutable values (e.g., `MAX_BPS`) to minimize storage read operations.
 
-**NFT Exchange Core** is a smart contract system that facilitates the non-custodial listing and purchasing of NFTs. It implements a dual-fee model (Listing Fee + Platform Fee) and enforces strict checks to prevent common market exploits.
+### 2. Security Patterns
+- **DoS Prevention (Defensive Transfer Logic):**
+  - The protocol uses low-level `.call` instead of `.transfer` to accommodate smart contract wallets and prevent gas limit issues during settlement.
+  - **Explicit Failure Handling:** Return values from all external calls are strictly validated (`if (!success) revert()`) to prevent inconsistent states if a recipient contract reverts.
+- **Checks-Effects-Interactions (CEI):** Strict adherence to the CEI pattern where listings are deleted from storage *before* external asset or value transfers to mitigate reentrancy risks.
+- **Reentrancy Protection:** Integrated `ReentrancyGuard` on high-value functions as an additional security layer.
 
-### 🔍 Key Technical Features:
+### 3. Financial Precision
+- **Basis Points (BPS):** Fee calculations utilize a BPS system (1/10000th) to ensure granular precision and avoid rounding errors during fee splitting between sellers and the protocol.
 
-* **Atomic Settlement & Fee Splitting:**
-    * **Logic:** The `buyNft` function calculates the platform fee (in Basis Points), transfers the net amount to the seller, and the fee to the protocol in a single execution flow.
-    * **Precision:** Implemented granular fee calculation using Basis Points (BPS) (`fee * feeBps / 10000`) to avoid rounding errors common in integer arithmetic.
+## 🧪 Testing Strategy (Foundry)
 
-* **Defensive Transfer Logic (DoS Prevention):**
-    * **The Problem:** If a seller's address is a smart contract that reverts on receiving ETH, it could permanently lock an item or break the marketplace flow.
-    * **The Solution:** The protocol explicitly handles failure cases. I wrote specific Foundry tests (`RevertingSeller`) to simulate hostile actors rejecting ETH, ensuring the protocol reverts safely rather than leaving the state inconsistent.
+The protocol is validated using **Foundry** with a focus on edge cases and defensive logic.
 
-* **Security Patterns:**
-    * **Reentrancy Protection:** Applied `nonReentrant` modifiers to all functions performing external ETH calls (`buyNft`) to prevent reentrancy attacks during the value transfer.
-    * **State-First Design:** Follows the "Checks-Effects-Interactions" pattern, deleting the listing from storage *before* transferring the asset to prevent re-listing exploits.
+| Test Category | Focus |
+| :--- | :--- |
+| **Unit Testing** | Full coverage of listing, buying, and cancellation flows. |
+| **Hostile Actors** | Simulation of `RevertingSeller` and `RevertingReceiver` to verify the protocol fails gracefully rather than locking assets. |
+| **Edge Cases** | Validation of zero-fee scenarios, self-purchasing prevention, and administrative permission checks. |
 
-## 🛠️ Stack & Tools
+### Running the tests
 
-* **Language:** Solidity `0.8.24`.
-* **Testing:** Foundry (Forge).
-    * *Highlights:* Usage of Mocks (`MockNFT`) and hostile contracts (`RevertingReceiver`) to test edge cases.
-* **Standards:** ERC-721, Ownable.
+```bash
+# Install dependencies
+forge install
 
----
+# Run tests
+forge test -vvv
 
-*This repository contains the core settlement logic for a decentralized marketplace infrastructure.*
+# Check coverage
+forge coverage
